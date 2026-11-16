@@ -1,0 +1,1562 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>小一每日語文朗讀樂園 🌟</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Noto Sans TC', sans-serif;
+      background: linear-gradient(135deg, #FFFBEB 0%, #E0F2FE 100%);
+      min-height: 100vh;
+    }
+    .bouncy-btn {
+      transition: transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.15s ease;
+    }
+    .bouncy-btn:active {
+      transform: scale(0.95);
+    }
+    .pulse-ring {
+      animation: pulse-ring 1.5s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
+    }
+    @keyframes pulse-ring {
+      0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+      70% { transform: scale(1); box-shadow: 0 0 0 18px rgba(239, 68, 68, 0); }
+      100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+    }
+    .chest-shake {
+      animation: shake 0.8s ease-in-out infinite;
+    }
+    @keyframes shake {
+      0%, 100% { transform: rotate(0deg) scale(1.05); }
+      25% { transform: rotate(-6deg) scale(1.08); }
+      75% { transform: rotate(6deg) scale(1.08); }
+    }
+    /* KTV 字幕動態樣式 */
+    .ktv-char {
+      display: inline-block;
+      transition: all 0.18s cubic-bezier(0.34, 1.56, 0.64, 1);
+      padding: 0.1rem 0.25rem;
+      border-radius: 0.5rem;
+    }
+    .ktv-read {
+      color: #059669;
+      background-color: #d1fae5;
+      transform: scale(1.08);
+      text-shadow: 0 1px 2px rgba(16, 185, 129, 0.2);
+    }
+    .ktv-current {
+      color: #ffffff;
+      background-color: #f59e0b;
+      transform: scale(1.22) translateY(-3px);
+      box-shadow: 0 4px 10px rgba(245, 158, 11, 0.45);
+    }
+    /* 自訂捲軸 */
+    ::-webkit-scrollbar { width: 8px; }
+    ::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 8px; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 8px; }
+  </style>
+</head>
+<body class="text-slate-800 select-none">
+
+  <!-- 頂部導覽列 -->
+  <header class="bg-white/90 backdrop-blur-md shadow-sm sticky top-0 z-40 border-b-2 border-amber-200">
+    <div class="max-w-5xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-3">
+      <div class="flex items-center gap-2.5">
+        <span class="text-3xl">📖</span>
+        <div>
+          <h1 class="text-xl md:text-2xl font-black text-amber-600 tracking-wide">每日語文朗讀樂園</h1>
+          <p class="text-xs text-slate-500 font-medium">開口讀一讀，天天集貼紙！</p>
+        </div>
+      </div>
+
+      <!-- 雙語引擎切換器 -->
+      <div class="flex items-center gap-2 bg-slate-100 p-1.5 rounded-2xl border border-slate-200">
+        <button id="btn-lang-hk" onclick="setLanguage('zh-HK')" class="px-3.5 py-1.5 rounded-xl font-bold text-sm transition-all bg-amber-500 text-white shadow">
+          🇭🇰 粵語 (廣東話)
+        </button>
+        <button id="btn-lang-cn" onclick="setLanguage('zh-CN')" class="px-3.5 py-1.5 rounded-xl font-bold text-sm transition-all text-slate-600 hover:bg-white">
+          🇨🇳 普通話
+        </button>
+      </div>
+
+      <!-- 教師後台入口按鈕 -->
+      <div class="flex items-center gap-2">
+        <button id="btn-open-stickers" onclick="openStickerModal()" class="hidden bouncy-btn bg-pink-100 hover:bg-pink-200 text-pink-700 font-bold px-3.5 py-2 rounded-xl text-sm flex items-center gap-1.5 border border-pink-200">
+          <span>📒 我的貼紙簿</span>
+          <span id="header-sticker-count" class="bg-pink-500 text-white text-xs px-2 py-0.5 rounded-full">0/12</span>
+        </button>
+        <button onclick="toggleTeacherAuthModal()" class="bouncy-btn bg-slate-800 hover:bg-slate-700 text-white font-bold px-3.5 py-2 rounded-xl text-sm flex items-center gap-1.5 shadow-sm">
+          <span>👩‍🏫 教師後台</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- 主內容容器 -->
+  <main class="max-w-5xl mx-auto px-4 py-6">
+
+    <!-- ==================== 1. 學生登入畫面 ==================== -->
+    <section id="view-login" class="max-w-md mx-auto mt-6">
+      <div class="bg-white rounded-3xl shadow-xl p-8 border-4 border-amber-200 text-center">
+        <div class="w-24 h-24 bg-amber-100 rounded-full flex items-center justify-center text-5xl mx-auto mb-4 shadow-inner">
+          🦁
+        </div>
+        <h2 class="text-2xl font-black text-slate-800 mb-1">小朋友，你好！</h2>
+        <p class="text-slate-500 mb-6 text-base">請輸入你的資料，開始今天的朗讀挑戰吧！</p>
+
+        <form onsubmit="handleStudentLogin(event)" class="space-y-4 text-left">
+          <div>
+            <label class="block text-base font-bold text-slate-700 mb-1">🏫 班別（例如：1A）</label>
+            <input type="text" id="login-class" required placeholder="請輸入班別，如 1A"
+              class="w-full text-xl font-bold px-4 py-3 rounded-2xl border-2 border-slate-200 focus:border-amber-400 focus:outline-none bg-slate-50" />
+          </div>
+          <div>
+            <label class="block text-base font-bold text-slate-700 mb-1">🔢 學號（例如：05）</label>
+            <input type="number" id="login-no" required min="1" max="50" placeholder="請輸入學號"
+              class="w-full text-xl font-bold px-4 py-3 rounded-2xl border-2 border-slate-200 focus:border-amber-400 focus:outline-none bg-slate-50" />
+          </div>
+          <div>
+            <label class="block text-base font-bold text-slate-700 mb-1">📛 姓名</label>
+            <input type="text" id="login-name" required placeholder="請輸入你的名字"
+              class="w-full text-xl font-bold px-4 py-3 rounded-2xl border-2 border-slate-200 focus:border-amber-400 focus:outline-none bg-slate-50" />
+          </div>
+          <button type="submit"
+            class="w-full bouncy-btn bg-gradient-to-r from-amber-400 to-orange-500 hover:from-amber-500 hover:to-orange-600 text-white font-black text-2xl py-4 rounded-2xl shadow-lg mt-4">
+            🚀 開始今日朗讀！
+          </button>
+        </form>
+      </div>
+    </section>
+
+    <!-- ==================== 2. 學生練習主畫面 ==================== -->
+    <section id="view-student" class="hidden space-y-6">
+      
+      <!-- 學生個人狀態與能量條卡片 -->
+      <div class="bg-white rounded-3xl p-5 shadow-md border-2 border-sky-200 flex flex-col md:flex-row items-center justify-between gap-4">
+        <div class="flex items-center gap-4">
+          <div class="w-16 h-16 rounded-2xl bg-sky-100 flex items-center justify-center text-4xl shadow-inner">
+            🎓
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <span id="display-student-info" class="text-xl font-black text-slate-800">1A (01) 陳大文</span>
+              <button onclick="studentLogout()" class="text-xs bg-rose-100 hover:bg-rose-200 text-rose-700 px-2.5 py-1 rounded-lg font-bold">登出</button>
+            </div>
+            <div class="flex items-center gap-4 mt-1.5 text-sm font-bold">
+              <span class="text-amber-500 flex items-center gap-1">⭐ 累積星星：<b id="stat-stars" class="text-lg">0</b> 顆</span>
+              <span class="text-orange-500 flex items-center gap-1">🔥 連續打卡：<b id="stat-streak" class="text-lg">1</b> 天</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 今日任務能量條與寶箱 -->
+        <div class="w-full md:w-1/2 bg-amber-50 p-3.5 rounded-2xl border border-amber-200">
+          <div class="flex justify-between items-center mb-1.5">
+            <span class="text-sm font-black text-amber-800">⚡ 今日任務能量條</span>
+            <span id="energy-text" class="text-sm font-black text-amber-600">0% (完成詞語+短文可開寶箱!)</span>
+          </div>
+          <div class="w-full bg-amber-200/70 h-4 rounded-full overflow-hidden p-0.5">
+            <div id="energy-bar" class="bg-gradient-to-r from-amber-400 to-orange-500 h-full rounded-full transition-all duration-500" style="width: 0%"></div>
+          </div>
+          <div id="chest-banner" class="hidden mt-2.5 text-center">
+            <button onclick="openTreasureChest()" class="bouncy-btn chest-shake bg-gradient-to-r from-pink-500 to-rose-500 text-white font-black px-5 py-2 rounded-xl shadow-md text-base">
+              🎁 能量已滿！點我開啟今日驚喜貼紙寶箱！
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 語速控制與任務切換分頁 -->
+      <div class="flex flex-wrap items-center justify-between gap-3 bg-white p-3 rounded-2xl shadow-sm border border-slate-200">
+        <!-- 任務分頁 -->
+        <div class="flex gap-2">
+          <button id="tab-words" onclick="switchTaskTab('words')" class="bouncy-btn px-5 py-2.5 rounded-xl font-black text-lg bg-sky-500 text-white shadow flex items-center gap-2">
+            <span>🔤 任務一：詞語練習</span>
+            <span id="badge-words-done" class="hidden bg-emerald-400 text-white text-xs px-2 py-0.5 rounded-full">✓ 完成</span>
+          </button>
+          <button id="tab-passage" onclick="switchTaskTab('passage')" class="bouncy-btn px-5 py-2.5 rounded-xl font-black text-lg bg-slate-100 text-slate-600 hover:bg-slate-200 flex items-center gap-2">
+            <span>📖 任務二：短文朗讀</span>
+            <span id="badge-passage-done" class="hidden bg-emerald-400 text-white text-xs px-2 py-0.5 rounded-full">✓ 完成</span>
+          </button>
+        </div>
+
+        <!-- 語速調整（照顧學習差異） -->
+        <div class="flex items-center gap-2 bg-indigo-50 px-3 py-1.5 rounded-xl border border-indigo-100">
+          <span class="text-sm font-bold text-indigo-800">🐢 示範語速：</span>
+          <button id="speed-normal" onclick="setSpeechRate(1.0)" class="px-3 py-1 rounded-lg text-sm font-bold bg-indigo-600 text-white">正常 (1.0x)</button>
+          <button id="speed-slow" onclick="setSpeechRate(0.65)" class="px-3 py-1 rounded-lg text-sm font-bold text-indigo-700 hover:bg-indigo-100">慢速跟讀 (0.65x)</button>
+        </div>
+      </div>
+
+      <!-- ==================== 任務內容區 ==================== -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        
+        <!-- 左側：朗讀教材與逐詞語音播放 (7欄) -->
+        <div class="lg:col-span-7 bg-white rounded-3xl p-6 shadow-md border-2 border-slate-200 flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between mb-4">
+              <h3 id="task-title" class="text-2xl font-black text-sky-700">今日詞語練習</h3>
+              <button onclick="speakCurrentFullText()" class="bouncy-btn bg-sky-100 hover:bg-sky-200 text-sky-800 font-bold px-4 py-2 rounded-xl flex items-center gap-2 border border-sky-300">
+                <span class="text-xl">🔊</span>
+                <span>整段示範朗讀</span>
+              </button>
+            </div>
+
+            <p class="text-sm text-slate-500 mb-4 bg-slate-50 p-3 rounded-xl border border-slate-100">
+              💡 <b>小貼士：</b>不會讀的字詞，可以點擊下方的<b>小喇叭按鈕</b>聽老師示範發音喔！
+            </p>
+
+            <!-- 詞語卡片網格 或 短文分段顯示區 -->
+            <div id="reading-material-container" class="space-y-4">
+              <!-- 由 JS 動態渲染 -->
+            </div>
+          </div>
+
+          <!-- 裝置語音支援狀態提示 -->
+          <div id="speech-support-alert" class="hidden mt-4 p-3 bg-amber-50 border border-amber-300 rounded-xl text-xs text-amber-800 space-y-1">
+            <p id="speech-support-msg">⚠️ 提示：您的瀏覽器不支援即時語音辨識，或未開啟麥克風權限。請使用 Safari 或 Chrome 瀏覽器並允許麥克風存取。</p>
+          </div>
+        </div>
+
+        <!-- 右側：錄音控制與即時回饋分析區 (5欄) -->
+        <div class="lg:col-span-5 bg-white rounded-3xl p-6 shadow-md border-2 border-emerald-200 flex flex-col justify-between">
+          <div>
+            <h3 class="text-xl font-black text-emerald-700 mb-2 flex items-center gap-2">
+              <span>🎙️ 朗讀錄音與即時評分</span>
+            </h3>
+            <p class="text-sm text-slate-500 mb-5">準備好後，按下綠色按鈕大聲讀出來！</p>
+
+            <!-- 大型錄音按鈕區 -->
+            <div class="flex flex-col items-center justify-center py-4 bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200 mb-5">
+              <button id="btn-record-toggle" onclick="toggleRecording()"
+                class="bouncy-btn w-28 h-28 rounded-full bg-emerald-500 hover:bg-emerald-600 text-white shadow-xl flex flex-col items-center justify-center gap-1 border-4 border-white">
+                <span id="record-icon" class="text-4xl">🎤</span>
+                <span id="record-label" class="font-black text-base">開始錄音</span>
+              </button>
+              <p id="recording-status-text" class="mt-3 text-sm font-bold text-slate-500">點擊上方麥克風開始朗讀</p>
+            </div>
+
+            <!-- KTV 即時同步提詞機面板（錄音時自動顯示） -->
+            <div id="ktv-teleprompter-box" class="hidden mb-5 p-4 rounded-2xl bg-gradient-to-br from-amber-50 to-orange-50 border-2 border-amber-300 shadow-inner">
+              <div class="flex items-center justify-between mb-2">
+                <span class="text-xs font-black text-amber-700 flex items-center gap-1.5">
+                  <span class="inline-block w-2.5 h-2.5 rounded-full bg-rose-500 animate-ping"></span>
+                  🎤 KTV 同步跟讀字幕（亮燈代表已讀到）
+                </span>
+                <span id="ktv-progress-text" class="text-xs font-black text-amber-600">準備中...</span>
+              </div>
+              <div id="ktv-subtitle-display" class="text-2xl font-black leading-loose tracking-wider flex flex-wrap gap-1 p-3 bg-white/90 rounded-xl border border-amber-200">
+                <!-- 由 JS 動態填入逐字 KTV 字幕 -->
+              </div>
+            </div>
+
+            <!-- 即時語音辨識比對結果區 -->
+            <div id="feedback-box" class="hidden space-y-4">
+              <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200">
+                <div class="flex items-center justify-between mb-2">
+                  <span class="text-sm font-bold text-slate-600">📊 逐字比對結果：</span>
+                  <span id="accuracy-badge" class="text-lg font-black px-3 py-0.5 rounded-full bg-emerald-100 text-emerald-700">準確率 100%</span>
+                </div>
+                <!-- 逐字紅綠燈顯示區 -->
+                <div id="diff-result-display" class="text-2xl font-black leading-relaxed tracking-wider flex flex-wrap gap-1.5 p-2 bg-white rounded-xl border border-slate-100">
+                </div>
+                <p class="text-xs text-slate-400 mt-2">
+                  <span class="text-emerald-600 font-bold">● 綠色</span>：讀音正確　
+                  <span class="text-rose-500 font-bold">● 紅色</span>：讀錯或漏讀（可點擊紅字聽發音）
+                </p>
+              </div>
+
+              <!-- 鼓勵評語與星星 -->
+              <div id="encouragement-card" class="p-4 rounded-2xl bg-amber-50 border-2 border-amber-300 text-center">
+                <div id="earned-stars-display" class="text-3xl mb-1">⭐⭐⭐</div>
+                <p id="encouragement-msg" class="font-black text-amber-800 text-base">太棒了！發音非常標準！</p>
+              </div>
+
+              <!-- 錯誤重錄按鈕 -->
+              <button id="btn-retry-record" onclick="retryRecording()"
+                class="hidden w-full bouncy-btn bg-amber-500 hover:bg-amber-600 text-white font-black text-lg py-3 rounded-2xl shadow-md flex items-center justify-center gap-2">
+                <span>🔄 重錄一次（挑戰全對！）</span>
+              </button>
+
+              <!-- 提交成績按鈕 -->
+              <button id="btn-submit-score" onclick="submitTaskResult()"
+                class="w-full bouncy-btn bg-gradient-to-r from-sky-500 to-indigo-600 hover:from-sky-600 hover:to-indigo-700 text-white font-black text-lg py-3.5 rounded-2xl shadow-md flex items-center justify-center gap-2">
+                <span>📤 提交成績給老師</span>
+              </button>
+              <p id="upload-status-msg" class="text-center text-xs font-bold text-slate-500"></p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== 3. 教師後台管理畫面 ==================== -->
+    <section id="view-teacher" class="hidden space-y-6">
+      <div class="bg-slate-800 text-white rounded-3xl p-6 shadow-lg flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <h2 class="text-2xl font-black flex items-center gap-2">👩‍🏫 教師管理後台</h2>
+          <p class="text-slate-300 text-sm mt-1">管理每日朗讀教材、設定 Google Sheets 同步及查閱全班進度</p>
+        </div>
+        <button onclick="exitTeacherView()" class="bouncy-btn bg-amber-500 hover:bg-amber-600 text-white font-bold px-5 py-2.5 rounded-xl">
+          ← 返回學生練習畫面
+        </button>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- 左側：每日教材與語言設定 -->
+        <div class="bg-white rounded-3xl p-6 shadow-md border border-slate-200 space-y-4">
+          <h3 class="text-xl font-black text-slate-800 border-b pb-2">📝 1. 設定今日朗讀任務內容</h3>
+          
+          <!-- 新增：三年級識字小錦囊快速教材庫 -->
+          <div class="bg-amber-50/90 border-2 border-amber-200 rounded-2xl p-4 space-y-3">
+            <div class="flex items-center justify-between">
+              <span class="text-sm font-black text-amber-800 flex items-center gap-1.5">
+                <span>📚 三年級識字小錦囊（一鍵套用教材庫）</span>
+              </span>
+              <span class="text-xs text-amber-600 font-bold">點選主題自動帶入下方</span>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+              <div>
+                <label class="block text-xs font-bold text-slate-600 mb-1">選擇詞語主題單元：</label>
+                <select id="preset-words-select" onchange="applyPresetWords(this.value)" class="w-full p-2 rounded-xl border border-amber-300 bg-white text-sm font-bold text-slate-700 focus:outline-none focus:border-amber-500">
+                  <option value="">-- 請選擇詞語單元 --</option>
+                  <optgroup label="一、人物篇">
+                    <option value="人物_外貌">人物篇：外貌（6詞）</option>
+                    <option value="人物_身形">人物篇：身形（6詞）</option>
+                    <option value="人物_衣着">人物篇：衣着（6詞）</option>
+                    <option value="人物_行為">人物篇：行為（6詞）</option>
+                    <option value="人物_性格">人物篇：性格（6詞）</option>
+                    <option value="人物_其他">人物篇：其他（6詞）</option>
+                  </optgroup>
+                  <optgroup label="二、物品篇">
+                    <option value="物品_外形">物品篇：外形（6詞）</option>
+                    <option value="物品_顏色">物品篇：顏色（6詞）</option>
+                    <option value="物品_質感">物品篇：質感（6詞）</option>
+                    <option value="物品_感覺">物品篇：感覺（8詞）</option>
+                    <option value="物品_個人感受">物品篇：個人感受（8詞）</option>
+                    <option value="物品_其他">物品篇：其他（4詞）</option>
+                  </optgroup>
+                  <optgroup label="三、動作篇">
+                    <option value="動作_第一部分">動作篇：第一部分（15詞）</option>
+                    <option value="動作_第二部分">動作篇：第二部分（15詞）</option>
+                  </optgroup>
+                  <optgroup label="四、環境篇">
+                    <option value="環境_地">環境篇：地（8詞）</option>
+                    <option value="環境_天">環境篇：天（8詞）</option>
+                    <option value="環境_日子">環境篇：日子（7詞）</option>
+                    <option value="環境_家居">環境篇：家居（7詞）</option>
+                    <option value="環境_學校">環境篇：學校（7詞）</option>
+                    <option value="環境_街道建築物">環境篇：街道、建築物（8詞）</option>
+                  </optgroup>
+                </select>
+              </div>
+
+              <div>
+                <label class="block text-xs font-bold text-slate-600 mb-1">選擇短文篇章：</label>
+                <select id="preset-passage-select" onchange="applyPresetPassage(this.value)" class="w-full p-2 rounded-xl border border-amber-300 bg-white text-sm font-bold text-slate-700 focus:outline-none focus:border-amber-500">
+                  <option value="">-- 請選擇短文篇章 --</option>
+                  <option value="短文一">五、短文篇（一）：美晴的生日會</option>
+                  <option value="短文二">六、短文篇（二）：郊野公園遊玩</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- 詞語自由點選勾選區 -->
+            <div id="preset-word-chips-container" class="hidden pt-2 border-t border-amber-200/80">
+              <div class="flex items-center justify-between mb-1.5">
+                <span class="text-xs font-bold text-slate-600">👆 自由點選要加入的詞語（可跨單元疊加）：</span>
+                <div class="flex gap-1.5">
+                  <button type="button" onclick="selectAllPresetChips(true)" class="text-[11px] bg-amber-200 hover:bg-amber-300 text-amber-900 font-bold px-2 py-0.5 rounded">全選本單元</button>
+                  <button type="button" onclick="clearWordsInput()" class="text-[11px] bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold px-2 py-0.5 rounded">清空</button>
+                </div>
+              </div>
+              <div id="preset-word-chips" class="flex flex-wrap gap-1.5"></div>
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-sm font-bold text-slate-700 mb-1">預設朗讀語言</label>
+            <select id="teacher-default-lang" class="w-full p-2.5 rounded-xl border border-slate-300 font-bold">
+              <option value="zh-HK">粵語 (廣東話 zh-HK)</option>
+              <option value="zh-CN">普通話 (zh-CN)</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-sm font-bold text-slate-700 mb-1">任務一：今日詞語（請用逗號「，」分隔每個詞語）</label>
+            <input type="text" id="teacher-words-input" class="w-full p-3 rounded-xl border border-slate-300 font-bold text-base"
+              value="春天，花朵，蝴蝶，快樂，陽光，草地" />
+          </div>
+
+          <div>
+            <label class="block text-sm font-bold text-slate-700 mb-1">任務二：今日短文朗讀</label>
+            <textarea id="teacher-passage-input" rows="3" class="w-full p-3 rounded-xl border border-slate-300 font-bold text-base">春天來了，溫暖的陽光灑在綠油油的草地上。五顏六色的花朵開了，蝴蝶在花叢中快樂地飛舞。</textarea>
+          </div>
+
+          <button onclick="saveDailyContent()" class="w-full bouncy-btn bg-emerald-600 hover:bg-emerald-700 text-white font-black py-3 rounded-xl shadow">
+            💾 儲存並更新今日教材
+          </button>
+        </div>
+
+        <!-- 右側：Google Sheets 連接設定 -->
+        <div class="bg-white rounded-3xl p-6 shadow-md border border-slate-200 space-y-4">
+          <div class="flex items-center justify-between border-b pb-2">
+            <h3 class="text-xl font-black text-slate-800">📊 2. Google Sheets 自動同步設定</h3>
+            <button onclick="openGasCodeModal()" class="text-xs bg-indigo-100 hover:bg-indigo-200 text-indigo-700 font-bold px-3 py-1.5 rounded-lg">
+              📋 查看 Code.gs 部署教學
+            </button>
+          </div>
+
+          <p class="text-sm text-slate-600">
+            貼上您的 Google Apps Script 網頁應用程式網址（Web App URL），學生提交成績後將自動寫入您的 Google 試算表。
+          </p>
+
+          <div>
+            <label class="block text-sm font-bold text-slate-700 mb-1">Google Apps Script Web App URL</label>
+            <input type="url" id="teacher-gas-url" placeholder="https://script.google.com/macros/s/...... /exec"
+              class="w-full p-3 rounded-xl border border-slate-300 text-sm font-mono bg-slate-50" />
+          </div>
+
+          <div class="flex gap-3">
+            <button onclick="saveGasUrl()" class="flex-1 bouncy-btn bg-sky-600 hover:bg-sky-700 text-white font-bold py-2.5 rounded-xl">
+              💾 儲存網址
+            </button>
+            <button onclick="testGasConnection()" class="flex-1 bouncy-btn bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2.5 rounded-xl border border-slate-300">
+              🔌 測試連線與讀取資料
+            </button>
+          </div>
+          <p id="gas-test-status" class="text-xs font-bold text-slate-500"></p>
+        </div>
+      </div>
+
+      <!-- 學生成績記錄總表 -->
+      <div class="bg-white rounded-3xl p-6 shadow-md border border-slate-200">
+        <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+          <div>
+            <h3 class="text-xl font-black text-slate-800">📋 學生朗讀完成記錄表</h3>
+            <p class="text-xs text-slate-500">顯示本機暫存及從 Google Sheets 同步的學生練習記錄</p>
+          </div>
+          <div class="flex gap-2">
+            <button onclick="fetchRecordsFromSheets()" class="bouncy-btn bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold px-4 py-2 rounded-xl text-sm border border-indigo-200">
+              🔄 從 Google Sheets 重新整理
+            </button>
+            <button onclick="exportRecordsCSV()" class="bouncy-btn bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold px-4 py-2 rounded-xl text-sm border border-emerald-200">
+              📥 匯出 CSV 報表
+            </button>
+          </div>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse">
+            <thead>
+              <tr class="bg-slate-100 text-slate-700 text-sm border-b-2 border-slate-200">
+                <th class="p-3 rounded-tl-xl">完成時間</th>
+                <th class="p-3">班別</th>
+                <th class="p-3">學號</th>
+                <th class="p-3">姓名</th>
+                <th class="p-3">語言</th>
+                <th class="p-3">任務類型</th>
+                <th class="p-3">準確率</th>
+                <th class="p-3">錯字記錄</th>
+                <th class="p-3 rounded-tr-xl">星星 / 貼紙數</th>
+              </tr>
+            </thead>
+            <tbody id="records-table-body" class="text-sm divide-y divide-slate-100">
+              <!-- 由 JS 動態填入 -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ==================== 彈出視窗：我的貼紙收集冊 ==================== -->
+  <div id="modal-stickers" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl max-w-2xl w-full p-6 shadow-2xl border-4 border-pink-300 max-h-[85vh] overflow-y-auto">
+      <div class="flex items-center justify-between border-b pb-3 mb-4">
+        <div>
+          <h3 class="text-2xl font-black text-pink-600">📒 我的可愛動物貼紙簿</h3>
+          <p class="text-sm text-slate-500">每天完成「詞語 + 短文」朗讀，就能開啟寶箱收集新貼紙！</p>
+        </div>
+        <button onclick="closeModal('modal-stickers')" class="w-10 h-10 rounded-full bg-slate-100 hover:bg-slate-200 font-black text-xl">✕</button>
+      </div>
+      <div id="sticker-grid" class="grid grid-cols-3 sm:grid-cols-4 gap-4">
+        <!-- 12 款貼紙動態渲染 -->
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== 彈出視窗：開啟驚喜寶箱動畫 ==================== -->
+  <div id="modal-chest-reward" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl max-w-sm w-full p-8 text-center shadow-2xl border-4 border-amber-400">
+      <p class="text-sm font-black text-amber-500 tracking-widest uppercase mb-2">🎉 恭喜獲得新貼紙！ 🎉</p>
+      <div id="reward-sticker-emoji" class="text-8xl my-4 animate-bounce">🐼</div>
+      <h4 id="reward-sticker-name" class="text-2xl font-black text-slate-800 mb-1">勤力小熊貓</h4>
+      <p id="reward-sticker-desc" class="text-sm text-slate-500 mb-6">已自動放進你的專屬貼紙簿囉！</p>
+      <button onclick="closeModal('modal-chest-reward')" class="w-full bouncy-btn bg-amber-500 hover:bg-amber-600 text-white font-black text-lg py-3 rounded-2xl shadow">
+        太開心了！收下貼紙
+      </button>
+    </div>
+  </div>
+
+  <!-- ==================== 彈出視窗：教師密碼驗證 ==================== -->
+  <div id="modal-teacher-auth" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl max-w-sm w-full p-6 shadow-2xl text-center">
+      <h3 class="text-xl font-black text-slate-800 mb-2">🔐 教師後台驗證</h3>
+      <p class="text-sm text-slate-500 mb-4">請輸入教師密碼（預設密碼：<code class="bg-slate-100 px-1.5 py-0.5 rounded font-bold text-slate-800">1234</code>）</p>
+      <input type="password" id="teacher-pwd-input" placeholder="請輸入密碼"
+        class="w-full text-center text-xl font-bold p-3 rounded-xl border-2 border-slate-200 mb-4 focus:border-slate-800 focus:outline-none" />
+      <div class="flex gap-2">
+        <button onclick="closeModal('modal-teacher-auth')" class="flex-1 py-2.5 rounded-xl bg-slate-100 font-bold text-slate-600">取消</button>
+        <button onclick="verifyTeacherPwd()" class="flex-1 py-2.5 rounded-xl bg-slate-800 text-white font-bold">進入後台</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== 彈出視窗：Google Apps Script 程式碼教學 ==================== -->
+  <div id="modal-gas-code" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl max-w-3xl w-full p-6 shadow-2xl max-h-[85vh] overflow-y-auto">
+      <div class="flex items-center justify-between border-b pb-3 mb-4">
+        <h3 class="text-xl font-black text-indigo-700">📋 Google Apps Script (Code.gs) 部署步驟</h3>
+        <button onclick="closeModal('modal-gas-code')" class="w-9 h-9 rounded-full bg-slate-100 font-black">✕</button>
+      </div>
+      <ol class="list-decimal list-inside text-sm text-slate-700 space-y-1.5 mb-4 bg-indigo-50 p-4 rounded-2xl">
+        <li>開啟您的 <b>Google 試算表 (Google Sheets)</b>，點選上方選單「<b>擴充功能</b>」＞「<b>Apps Script</b>」。</li>
+        <li>將編輯器內的原有程式碼全部刪除，貼上以下完整程式碼並按「儲存」。</li>
+        <li>點擊右上角「<b>部署</b>」＞「<b>新增部署作業</b>」，類型選擇「<b>網頁應用程式</b>」。</li>
+        <li>執行身分選「<b>我</b>」，誰可以存取請務必選擇「<b>所有人</b>」，然後按「部署」。</li>
+        <li>複製產生的「網頁應用程式網址」，貼回本系統的教師後台即可自動同步！</li>
+      </ol>
+      <div class="relative">
+        <button onclick="copyGasCode()" class="absolute top-3 right-3 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-3 py-1.5 rounded-lg shadow">
+          複製程式碼
+        </button>
+        <pre id="gas-code-block" class="bg-slate-900 text-emerald-300 p-4 rounded-2xl text-xs overflow-x-auto leading-relaxed font-mono">function doPost(e) {
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+  if (sheet.getLastRow() === 0) {
+    sheet.appendRow(["完成時間", "班別", "學號", "姓名", "練習語言", "任務類型", "準確率(%)", "錯字列表", "獲得星星", "已解鎖貼紙數"]);
+  }
+  var data = JSON.parse(e.postData.contents);
+  sheet.appendRow([
+    data.timestamp,
+    data.className,
+    data.studentNo,
+    data.studentName,
+    data.language,
+    data.taskType,
+    data.accuracy,
+    data.wrongChars,
+    data.starsEarned,
+    data.stickerCount
+  ]);
+  return ContentService.createTextOutput(JSON.stringify({ status: "success" }))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+function doGet(e) {
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+  var rows = sheet.getDataRange().getValues();
+  var result = [];
+  for (var i = 1; i &lt; rows.length; i++) {
+    result.push({
+      timestamp: rows[i][0],
+      className: rows[i][1],
+      studentNo: rows[i][2],
+      studentName: rows[i][3],
+      language: rows[i][4],
+      taskType: rows[i][5],
+      accuracy: rows[i][6],
+      wrongChars: rows[i][7],
+      starsEarned: rows[i][8],
+      stickerCount: rows[i][9]
+    });
+  }
+  return ContentService.createTextOutput(JSON.stringify(result.reverse()))
+    .setMimeType(ContentService.MimeType.JSON);
+}</pre>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== JavaScript 核心邏輯 ==================== -->
+  <script>
+    // 0. 三年級識字小錦囊內建教材資料庫
+    const GRADE3_PRESET_LIBRARY = {
+      words: {
+        '人物_外貌': ['長髮的', '配戴眼鏡的', '方臉的', '鼻子圓圓的', '漂亮的', '嘴巴小小的'],
+        '人物_身形': ['高大的', '矮小的', '肥胖的', '瘦小的', '強壯的', '彎腰的'],
+        '人物_衣着': ['穿紅衣的', '穿短裙的', '拿着袋子的', '戴帽子的', '衣着整齊的', '衣着破爛的'],
+        '人物_行為': ['好學的', '懶惰的', '誠實的', '頑皮的', '有禮貌的', '粗心大意的'],
+        '人物_性格': ['可愛的', '害羞的', '温柔的', '膽小的', '活潑好動的', '自私的'],
+        '人物_其他': ['年幼的', '年老的', '著名的', '富有的', '可憐的', '貧窮的'],
+        '物品_外形': ['圓圓的', '尖尖的', '方形的', '長條形的', '細小的', '巨大的'],
+        '物品_顏色': ['紅紅的', '金黃色的', '有圖案的', '彩色的', '五彩繽紛的', '五顏六色的'],
+        '物品_質感': ['又重又硬的', '軟綿綿的', '厚厚的', '薄薄的', '光滑的', '粗糙的'],
+        '物品_感覺': ['亮晶晶的', '好看的', '悦耳動聽的', '難聽的', '美味可口的', '香甜的', '熱呼呼的', '冰凍的'],
+        '物品_個人感受': ['珍貴的', '便宜的', '特別的', '普通的', '有趣的', '沉悶的', '精彩的', '奇怪的'],
+        '物品_其他': ['新鮮的', '各式各樣的', '豐富的', '種類繁多的'],
+        '動作_第一部分': ['高聲地', '安靜地', '靜悄悄地', '祕密地', '親切地', '耐心地', '認真地', '用功地', '努力地', '馬馬虎虎地', '不知不覺地', '好奇地', '細心地', '飛快地', '趕快地'],
+        '動作_第二部分': ['焦急地', '慢吞吞地', '忙碌地', '辛勞地', '懶洋洋地', '舒服地', '悠閒地', '興奮地', '愉快地', '傷心地', '失望地', '熱烈地', '冷靜地', '緊張地', '輕鬆地'],
+        '環境_地': ['優美的風景', '翠綠的青山', '青綠的草地', '茂盛的樹木', '芬芳的花香', '遼闊的大海', '人山人海的沙灘', '幼細的沙'],
+        '環境_天': ['藍色的天空', '漆黑的夜空', '寧靜的晚上', '猛烈的陽光', '彎彎的月亮', '閃亮的星星', '軟綿綿的白雲', '清新的空氣'],
+        '環境_日子': ['和暖的春天', '潮濕的春天', '炎熱的夏天', '清涼的秋天', '寒冷的冬天', '下雨的日子', '晴朗的日子'],
+        '環境_家居': ['明亮的房間', '整齊的客廳', '漆黑的角落', '混亂的睡房', '寬敞的陽台', '新簇簇的家具', '亂七八糟的玩具'],
+        '環境_學校': ['空曠的操場', '長長的走廊', '大大的禮堂', '美麗的花圃', '明亮的課室', '整潔的書桌', '亂七八糟的抽屜'],
+        '環境_街道建築物': ['寬闊的街道', '嘈吵的市場', '熱鬧的商場', '安靜的圖書館', '附近的公園', '古老的房子', '高高的大廈', '擠迫的巴士']
+      },
+      passages: {
+        '短文一': '今天是美晴的生日，我來到美晴家參加她的生日會。首先，我跟美晴一面談天，一面幫忙招呼客人。接着，美晴來到大家面前，我們唱了一首動聽的生日歌送給她。然後，美晴將蛋糕切開，把蛋糕分給每一位客人。蛋糕非常美味，我忍不住跟美晴多要了一塊蛋糕來吃。最後，美晴拉着我的雙手，高興地説：「今天真是又高興又幸福呢！我希望每天都是我的生日。」',
+        '短文二': '復活節假期的那一天，我和爸爸一起到郊野公園遊玩。首先，我們沿着小徑散步，我看見到處都長滿了五顏六色的鮮花，非常漂亮。接着，我們來到涼亭乘涼，旁邊有一對兄弟正在吃雞腿。雞腿的香味飄了過來，令我感到肚子很餓。然後，我們到小賣部買了一個熱狗吃，熱狗的味道不太美味，我想把它扔掉，爸爸卻跟我説：「我們要珍惜食物。」我只好硬着頭皮，把熱狗吃掉。最後，太陽下山了，我們懷着依依不捨的心情回家去。'
+      }
+    };
+
+    let currentActivePresetWords = [];
+
+    function applyPresetWords(categoryKey) {
+      const container = document.getElementById('preset-word-chips-container');
+      if (!categoryKey || !GRADE3_PRESET_LIBRARY.words[categoryKey]) {
+        container.classList.add('hidden');
+        return;
+      }
+      currentActivePresetWords = GRADE3_PRESET_LIBRARY.words[categoryKey];
+      document.getElementById('teacher-words-input').value = currentActivePresetWords.join('，');
+      renderPresetWordChips();
+      container.classList.remove('hidden');
+      showToast(`📖 已載入單元詞語，可自由點選增減！`);
+    }
+
+    function renderPresetWordChips() {
+      const chipsBox = document.getElementById('preset-word-chips');
+      const currentInputWords = new Set(
+        document.getElementById('teacher-words-input').value
+          .split(/[,，、\s]+/)
+          .map(w => w.trim())
+          .filter(Boolean)
+      );
+
+      chipsBox.innerHTML = currentActivePresetWords.map(word => {
+        const isSelected = currentInputWords.has(word);
+        return `
+          <button type="button" onclick="togglePresetWordChip('${word}')"
+            class="px-2.5 py-1 rounded-lg text-xs font-bold border transition-all ${
+              isSelected
+                ? 'bg-amber-500 text-white border-amber-600 shadow-xs'
+                : 'bg-white text-slate-600 border-slate-300 hover:bg-amber-100'
+            }">
+            ${isSelected ? '✓ ' : '+ '}${word}
+          </button>
+        `;
+      }).join('');
+    }
+
+    function togglePresetWordChip(word) {
+      const inputEl = document.getElementById('teacher-words-input');
+      let list = inputEl.value.split(/[,，、\s]+/).map(w => w.trim()).filter(Boolean);
+      const idx = list.indexOf(word);
+      if (idx > -1) {
+        list.splice(idx, 1);
+      } else {
+        list.push(word);
+      }
+      inputEl.value = list.join('，');
+      renderPresetWordChips();
+    }
+
+    function selectAllPresetChips(addAll) {
+      const inputEl = document.getElementById('teacher-words-input');
+      let list = inputEl.value.split(/[,，、\s]+/).map(w => w.trim()).filter(Boolean);
+      if (addAll) {
+        currentActivePresetWords.forEach(w => {
+          if (!list.includes(w)) list.push(w);
+        });
+      }
+      inputEl.value = list.join('，');
+      renderPresetWordChips();
+    }
+
+    function clearWordsInput() {
+      document.getElementById('teacher-words-input').value = '';
+      renderPresetWordChips();
+    }
+
+    function applyPresetPassage(passageKey) {
+      if (!passageKey || !GRADE3_PRESET_LIBRARY.passages[passageKey]) return;
+      document.getElementById('teacher-passage-input').value = GRADE3_PRESET_LIBRARY.passages[passageKey];
+      showToast(`📖 已載入「${passageKey}」短文內容！`);
+    }
+
+    // 1. 預設資料與狀態管理
+    const STICKER_CATALOG = [
+      { id: 1, emoji: '🦁', name: '勇氣小獅子', desc: '大聲朗讀真勇敢！' },
+      { id: 2, emoji: '🐼', name: '勤力小熊貓', desc: '每天練習不偷懶！' },
+      { id: 3, emoji: '🦉', name: '朗讀小博士', desc: '字正腔圓一級棒！' },
+      { id: 4, emoji: '🐰', name: '聰明小白兔', desc: '耳朵靈敏聽得清！' },
+      { id: 5, emoji: '🦊', name: '機靈小狐狸', desc: '反應超快小能手！' },
+      { id: 6, emoji: '🐧', name: '紳士小企鵝', desc: '優雅朗讀有感情！' },
+      { id: 7, emoji: '🐨', name: '抱抱小樹熊', desc: '穩紮穩打進步快！' },
+      { id: 8, emoji: '🦄', name: '奇蹟獨角獸', desc: '發音閃亮如星星！' },
+      { id: 9, emoji: '🐶', name: '忠誠小旺旺', desc: '天天打卡好榜樣！' },
+      { id: 10, emoji: '🐱', name: '甜美小花貓', desc: '聲音清脆又動聽！' },
+      { id: 11, emoji: '🐸', name: '歌唱小青蛙', desc: '節奏感十足喔！' },
+      { id: 12, emoji: '👑', name: '語文小皇冠', desc: '榮譽朗讀小明星！' }
+    ];
+
+    let appState = {
+      lang: 'zh-HK', // 'zh-HK' or 'zh-CN'
+      speechRate: 1.0,
+      currentTab: 'words', // 'words' or 'passage'
+      student: null,
+      dailyContent: {
+        words: ['春天', '花朵', '蝴蝶', '快樂', '陽光', '草地'],
+        passage: '春天來了，溫暖的陽光灑在綠油油的草地上。五顏六色的花朵開了，蝴蝶在花叢中快樂地飛舞。'
+      },
+      gasUrl: '',
+      isRecording: false,
+      recognition: null,
+      lastEvalResult: null
+    };
+
+    // 初始化載入 LocalStorage
+    window.addEventListener('DOMContentLoaded', () => {
+      const savedContent = localStorage.getItem('reading_daily_content');
+      if (savedContent) appState.dailyContent = JSON.parse(savedContent);
+
+      const savedGasUrl = localStorage.getItem('reading_gas_url');
+      if (savedGasUrl) {
+        appState.gasUrl = savedGasUrl;
+        document.getElementById('teacher-gas-url').value = savedGasUrl;
+      }
+
+      const savedLang = localStorage.getItem('reading_default_lang');
+      if (savedLang) setLanguage(savedLang);
+
+      // 同步後台表單預設值
+      document.getElementById('teacher-words-input').value = appState.dailyContent.words.join('，');
+      document.getElementById('teacher-passage-input').value = appState.dailyContent.passage;
+      document.getElementById('teacher-default-lang').value = appState.lang;
+
+      initSpeechRecognition();
+    });
+
+    // 2. 雙語引擎切換 (粵語 zh-HK / 普通話 zh-CN)
+    function setLanguage(langCode) {
+      appState.lang = langCode;
+      const btnHk = document.getElementById('btn-lang-hk');
+      const btnCn = document.getElementById('btn-lang-cn');
+
+      if (langCode === 'zh-HK') {
+        btnHk.className = 'px-3.5 py-1.5 rounded-xl font-bold text-sm transition-all bg-amber-500 text-white shadow';
+        btnCn.className = 'px-3.5 py-1.5 rounded-xl font-bold text-sm transition-all text-slate-600 hover:bg-white';
+      } else {
+        btnCn.className = 'px-3.5 py-1.5 rounded-xl font-bold text-sm transition-all bg-rose-500 text-white shadow';
+        btnHk.className = 'px-3.5 py-1.5 rounded-xl font-bold text-sm transition-all text-slate-600 hover:bg-white';
+      }
+
+      if (appState.recognition) {
+        appState.recognition.lang = langCode;
+      }
+    }
+
+    function setSpeechRate(rate) {
+      appState.speechRate = rate;
+      document.getElementById('speed-normal').className = rate === 1.0
+        ? 'px-3 py-1 rounded-lg text-sm font-bold bg-indigo-600 text-white'
+        : 'px-3 py-1 rounded-lg text-sm font-bold text-indigo-700 hover:bg-indigo-100';
+      document.getElementById('speed-slow').className = rate < 1.0
+        ? 'px-3 py-1 rounded-lg text-sm font-bold bg-indigo-600 text-white'
+        : 'px-3 py-1 rounded-lg text-sm font-bold text-indigo-700 hover:bg-indigo-100';
+    }
+
+    // 3. 語音合成 TTS（示範朗讀）
+    function speakText(text) {
+      if (!('speechSynthesis' in window)) {
+        showToast('⚠️ 抱歉，您的瀏覽器不支援語音播放功能。');
+        return;
+      }
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = appState.lang;
+      utterance.rate = appState.speechRate;
+
+      const voices = window.speechSynthesis.getVoices();
+      const matchedVoice = voices.find(v => v.lang.toLowerCase().includes(appState.lang.toLowerCase()));
+      if (matchedVoice) {
+        utterance.voice = matchedVoice;
+      }
+      window.speechSynthesis.speak(utterance);
+    }
+
+    function speakCurrentFullText() {
+      const fullText = appState.currentTab === 'words'
+        ? appState.dailyContent.words.join('，')
+        : appState.dailyContent.passage;
+      speakText(fullText);
+    }
+
+    // 4. 學生登入、登出與狀態管理
+    function handleStudentLogin(event) {
+      event.preventDefault();
+      const className = document.getElementById('login-class').value.trim().toUpperCase();
+      const studentNo = document.getElementById('login-no').value.trim().padStart(2, '0');
+      const studentName = document.getElementById('login-name').value.trim();
+
+      if (!className || !studentNo || !studentName) {
+        showToast('⚠️ 請完整填寫班別、學號及姓名！');
+        return;
+      }
+
+      const studentKey = `reading_student_${className}_${studentNo}_${studentName}`;
+      const savedProfile = JSON.parse(localStorage.getItem(studentKey) || 'null');
+      const todayStr = new Date().toISOString().split('T')[0];
+
+      if (savedProfile) {
+        if (savedProfile.lastActiveDate !== todayStr) {
+          const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+          savedProfile.streak = (savedProfile.lastActiveDate === yesterday) ? (savedProfile.streak + 1) : 1;
+          savedProfile.todayWordsDone = false;
+          savedProfile.todayPassageDone = false;
+          savedProfile.chestOpenedToday = false;
+          savedProfile.lastActiveDate = todayStr;
+        }
+        appState.student = savedProfile;
+      } else {
+        appState.student = {
+          key: studentKey,
+          className,
+          studentNo,
+          studentName,
+          stars: 0,
+          streak: 1,
+          stickers: [],
+          todayWordsDone: false,
+          todayPassageDone: false,
+          chestOpenedToday: false,
+          lastActiveDate: todayStr
+        };
+      }
+
+      saveStudentProfile();
+      document.getElementById('view-login').classList.add('hidden');
+      document.getElementById('view-student').classList.remove('hidden');
+      document.getElementById('btn-open-stickers').classList.remove('hidden');
+
+      updateStudentUI();
+      switchTaskTab('words');
+      showToast(`👋 歡迎回來，${studentName}同學！`);
+    }
+
+    function studentLogout() {
+      if (appState.isRecording) {
+        stopRecording();
+      }
+      appState.student = null;
+      document.getElementById('view-student').classList.add('hidden');
+      document.getElementById('btn-open-stickers').classList.add('hidden');
+      document.getElementById('view-login').classList.remove('hidden');
+      document.getElementById('login-name').value = '';
+    }
+
+    function saveStudentProfile() {
+      if (appState.student && appState.student.key) {
+        localStorage.setItem(appState.student.key, JSON.stringify(appState.student));
+      }
+    }
+
+    function updateStudentUI() {
+      const s = appState.student;
+      if (!s) return;
+
+      document.getElementById('display-student-info').textContent = `${s.className} (${s.studentNo}) ${s.studentName}`;
+      document.getElementById('stat-stars').textContent = s.stars;
+      document.getElementById('stat-streak').textContent = s.streak;
+      document.getElementById('header-sticker-count').textContent = `${s.stickers.length}/${STICKER_CATALOG.length}`;
+
+      document.getElementById('badge-words-done').classList.toggle('hidden', !s.todayWordsDone);
+      document.getElementById('badge-passage-done').classList.toggle('hidden', !s.todayPassageDone);
+
+      // 更新能量條
+      let energy = 0;
+      if (s.todayWordsDone) energy += 50;
+      if (s.todayPassageDone) energy += 50;
+
+      document.getElementById('energy-bar').style.width = `${energy}%`;
+      document.getElementById('energy-text').textContent = energy === 100
+        ? '100% (能量已滿！)'
+        : `${energy}% (完成詞語+短文可開寶箱!)`;
+
+      const chestBanner = document.getElementById('chest-banner');
+      if (energy === 100 && !s.chestOpenedToday) {
+        chestBanner.classList.remove('hidden');
+      } else {
+        chestBanner.classList.add('hidden');
+      }
+    }
+
+    // 5. 任務分頁切換與教材渲染
+    function switchTaskTab(tabName) {
+      appState.currentTab = tabName;
+      const tabWords = document.getElementById('tab-words');
+      const tabPassage = document.getElementById('tab-passage');
+
+      if (tabName === 'words') {
+        tabWords.className = 'bouncy-btn px-5 py-2.5 rounded-xl font-black text-lg bg-sky-500 text-white shadow flex items-center gap-2';
+        tabPassage.className = 'bouncy-btn px-5 py-2.5 rounded-xl font-black text-lg bg-slate-100 text-slate-600 hover:bg-slate-200 flex items-center gap-2';
+        document.getElementById('task-title').textContent = '今日詞語練習';
+      } else {
+        tabPassage.className = 'bouncy-btn px-5 py-2.5 rounded-xl font-black text-lg bg-sky-500 text-white shadow flex items-center gap-2';
+        tabWords.className = 'bouncy-btn px-5 py-2.5 rounded-xl font-black text-lg bg-slate-100 text-slate-600 hover:bg-slate-200 flex items-center gap-2';
+        document.getElementById('task-title').textContent = '今日短文朗讀';
+      }
+
+      document.getElementById('feedback-box').classList.add('hidden');
+      document.getElementById('ktv-teleprompter-box').classList.add('hidden');
+      renderTaskMaterial();
+    }
+
+    function renderTaskMaterial() {
+      const container = document.getElementById('reading-material-container');
+      container.innerHTML = '';
+
+      if (appState.currentTab === 'words') {
+        const grid = document.createElement('div');
+        grid.className = 'grid grid-cols-2 sm:grid-cols-3 gap-3';
+
+        appState.dailyContent.words.forEach(word => {
+          const card = document.createElement('div');
+          card.className = 'bg-sky-50 hover:bg-sky-100 border-2 border-sky-200 rounded-2xl p-4 flex items-center justify-between transition-all shadow-xs';
+          card.innerHTML = `
+            <span class="text-xl sm:text-2xl font-black text-slate-800 tracking-wide">${word}</span>
+            <button type="button" onclick="speakText('${word.replace(/'/g, "\\'")}')" title="聽示範發音"
+              class="bouncy-btn w-10 h-10 rounded-full bg-white hover:bg-amber-100 text-sky-600 border border-sky-200 flex items-center justify-center text-lg shadow-xs shrink-0">
+              🔊
+            </button>
+          `;
+          grid.appendChild(card);
+        });
+        container.appendChild(grid);
+      } else {
+        const sentences = appState.dailyContent.passage
+          .split(/(?<=[。！？；])/)
+          .map(s => s.trim())
+          .filter(Boolean);
+
+        sentences.forEach(sentence => {
+          const pBox = document.createElement('div');
+          pBox.className = 'bg-amber-50/70 border-2 border-amber-200 rounded-2xl p-4 flex items-start justify-between gap-3';
+          pBox.innerHTML = `
+            <p class="text-xl sm:text-2xl font-bold text-slate-800 leading-relaxed tracking-wide">${sentence}</p>
+            <button type="button" onclick="speakText('${sentence.replace(/'/g, "\\'")}')" title="聆聽此句示範"
+              class="bouncy-btn w-11 h-11 rounded-full bg-white hover:bg-amber-100 text-amber-600 border border-amber-300 flex items-center justify-center text-xl shadow-xs shrink-0 mt-0.5">
+              🔊
+            </button>
+          `;
+          container.appendChild(pBox);
+        });
+      }
+    }
+
+    // 6. 語音辨識 STT 與逐字比對算法（含 KTV 即時同步字幕與 iPad/iOS 相容模式）
+    let finalTranscriptBuffer = '';
+    const isIOSDevice = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    const isInIframe = window.self !== window.top;
+
+    function getTargetCleanChars() {
+      const rawText = appState.currentTab === 'words'
+        ? appState.dailyContent.words.join('')
+        : appState.dailyContent.passage;
+      return rawText.replace(/[^\u4e00-\u9fa5]/g, '').split('');
+    }
+
+    function initSpeechRecognition() {
+      const alertBox = document.getElementById('speech-support-alert');
+      const alertMsg = document.getElementById('speech-support-msg');
+
+      // 若被嵌在 Google 協作平台等 iframe 中，提醒可能受限於外層權限
+      if (isInIframe) {
+        alertBox.classList.remove('hidden');
+        alertMsg.innerHTML = '⚠️ <b>偵測到內嵌視窗環境（如 Google 協作平台）：</b>若 iPad 無法啟動錄音，請老師將網頁改為「<b>在新分頁開啟獨立網址</b>」，避免協作平台封鎖麥克風權限。';
+      }
+
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SpeechRecognition) {
+        alertBox.classList.remove('hidden');
+        alertMsg.textContent = '⚠️ 提示：您的瀏覽器不支援即時語音辨識，請更新 iPadOS 或改用 Safari / Chrome 開啟。';
+        return;
+      }
+
+      const recognition = new SpeechRecognition();
+      recognition.lang = appState.lang;
+      // iPad Safari 不支援 continuous = true，改為單句分段自動續錄模式
+      recognition.continuous = !isIOSDevice;
+      recognition.interimResults = true;
+
+      recognition.onstart = () => {
+        appState.isRecording = true;
+        updateRecordButtonUI(true);
+        if (document.getElementById('ktv-teleprompter-box').classList.contains('hidden')) {
+          initKtvTeleprompter();
+        }
+      };
+
+      recognition.onresult = (event) => {
+        let interimTranscript = '';
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          const transcript = event.results[i][0].transcript;
+          if (event.results[i].isFinal) {
+            finalTranscriptBuffer += transcript;
+          } else {
+            interimTranscript += transcript;
+          }
+        }
+        const combinedSpoken = (finalTranscriptBuffer + interimTranscript).replace(/[^\u4e00-\u9fa5]/g, '');
+        updateKtvTeleprompter(combinedSpoken);
+      };
+
+      recognition.onerror = (event) => {
+        console.warn('Speech recognition error:', event.error);
+        if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
+          showToast('⚠️ 麥克風權限被拒絕！請檢查 iPad 設定或避免在 Google 協作平台內嵌開啟。');
+          stopRecording(false);
+        } else if (event.error === 'no-speech' && isIOSDevice && appState.isRecording) {
+          // iPad 停頓時的無聲超時，交由 onend 自動續錄
+        } else if (event.error !== 'aborted' && event.error !== 'no-speech') {
+          showToast(`⚠️ 語音辨識狀況 (${event.error})，請重試。`);
+          stopRecording(false);
+        }
+      };
+
+      recognition.onend = () => {
+        if (appState.isRecording) {
+          if (isIOSDevice) {
+            // iOS 單句結束後若學生尚未按「停止錄音」，自動無縫重啟下一句聆聽
+            try {
+              recognition.lang = appState.lang;
+              recognition.start();
+              return;
+            } catch (e) {
+              console.warn('iOS auto-restart failed:', e);
+            }
+          }
+          appState.isRecording = false;
+          updateRecordButtonUI(false);
+          evaluateSpokenText(finalTranscriptBuffer);
+        }
+      };
+
+      appState.recognition = recognition;
+    }
+
+    async function toggleRecording() {
+      if (!appState.recognition) {
+        showToast('⚠️ 您的瀏覽器不支援直接錄音辨識，請改用 Safari 或 Chrome 開啟。');
+        return;
+      }
+
+      if (appState.isRecording) {
+        stopRecording(true);
+      } else {
+        document.getElementById('feedback-box').classList.add('hidden');
+        document.getElementById('upload-status-msg').textContent = '';
+        finalTranscriptBuffer = '';
+
+        // 針對 iPad / Safari：先透過 getUserMedia 正式喚醒系統麥克風權限彈窗
+        if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+          try {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            stream.getTracks().forEach(track => track.stop());
+          } catch (permErr) {
+            console.error('Microphone permission error:', permErr);
+            showToast(isInIframe
+              ? '⚠️ Google 協作平台內嵌框封鎖了麥克風！請改用新分頁開啟獨立網址。'
+              : '⚠️ 無法開啟麥克風，請到 iPad「設定 > Safari > 麥克風」選擇允許！');
+            return;
+          }
+        }
+
+        appState.recognition.lang = appState.lang;
+        try {
+          appState.recognition.start();
+        } catch (err) {
+          console.error(err);
+          showToast('⚠️ 語音辨識啟動中，請稍候再試一次。');
+        }
+      }
+    }
+
+    function stopRecording(shouldEvaluate = true) {
+      appState.isRecording = false;
+      updateRecordButtonUI(false);
+      if (appState.recognition) {
+        try {
+          appState.recognition.stop();
+        } catch (e) {}
+      }
+      if (shouldEvaluate) {
+        setTimeout(() => {
+          evaluateSpokenText(finalTranscriptBuffer);
+        }, 250);
+      }
+    }
+
+    function retryRecording() {
+      document.getElementById('feedback-box').classList.add('hidden');
+      toggleRecording();
+    }
+
+    function updateRecordButtonUI(isRecording) {
+      const btn = document.getElementById('btn-record-toggle');
+      const icon = document.getElementById('record-icon');
+      const label = document.getElementById('record-label');
+      const statusText = document.getElementById('recording-status-text');
+
+      if (isRecording) {
+        btn.className = 'bouncy-btn pulse-ring w-28 h-28 rounded-full bg-rose-500 hover:bg-rose-600 text-white shadow-xl flex flex-col items-center justify-center gap-1 border-4 border-white';
+        icon.textContent = '⏹️';
+        label.textContent = '停止錄音';
+        statusText.textContent = '🔴 正在聆聽中... 讀完請按停止';
+        statusText.className = 'mt-3 text-sm font-black text-rose-600';
+      } else {
+        btn.className = 'bouncy-btn w-28 h-28 rounded-full bg-emerald-500 hover:bg-emerald-600 text-white shadow-xl flex flex-col items-center justify-center gap-1 border-4 border-white';
+        icon.textContent = '🎤';
+        label.textContent = '開始錄音';
+        statusText.textContent = '點擊上方麥克風開始朗讀';
+        statusText.className = 'mt-3 text-sm font-bold text-slate-500';
+      }
+    }
+
+    // KTV 同步提詞機邏輯
+    function initKtvTeleprompter() {
+      const box = document.getElementById('ktv-teleprompter-box');
+      const display = document.getElementById('ktv-subtitle-display');
+      const progressText = document.getElementById('ktv-progress-text');
+      const chars = getTargetCleanChars();
+
+      display.innerHTML = chars.map((ch, idx) =>
+        `<span id="ktv-char-${idx}" class="ktv-char ${idx === 0 ? 'ktv-current' : 'text-slate-700'}">${ch}</span>`
+      ).join('');
+
+      progressText.textContent = `0 / ${chars.length} 字`;
+      box.classList.remove('hidden');
+    }
+
+    function updateKtvTeleprompter(spokenClean) {
+      const targetChars = getTargetCleanChars();
+      const spokenChars = spokenClean.split('');
+      let targetIdx = 0;
+
+      // 順序滑動視窗匹配，容許偶爾漏讀一字仍能跟上進度
+      for (let s = 0; s < spokenChars.length && targetIdx < targetChars.length; s++) {
+        const lookAheadLimit = Math.min(targetIdx + 3, targetChars.length);
+        for (let t = targetIdx; t < lookAheadLimit; t++) {
+          if (spokenChars[s] === targetChars[t]) {
+            targetIdx = t + 1;
+            break;
+          }
+        }
+      }
+
+      targetChars.forEach((_, idx) => {
+        const el = document.getElementById(`ktv-char-${idx}`);
+        if (!el) return;
+        if (idx < targetIdx) {
+          el.className = 'ktv-char ktv-read';
+        } else if (idx === targetIdx) {
+          el.className = 'ktv-char ktv-current';
+        } else {
+          el.className = 'ktv-char text-slate-700';
+        }
+      });
+
+      document.getElementById('ktv-progress-text').textContent = `${targetIdx} / ${targetChars.length} 字`;
+    }
+
+    // 7. 逐字評分與紅綠燈回饋
+    function evaluateSpokenText(spokenRaw) {
+      document.getElementById('ktv-teleprompter-box').classList.add('hidden');
+      const targetChars = getTargetCleanChars();
+      const spokenClean = (spokenRaw || '').replace(/[^\u4e00-\u9fa5]/g, '');
+      const spokenChars = spokenClean.split('');
+
+      if (spokenChars.length === 0) {
+        showToast('🎙️ 沒有聽到聲音喔，請靠近麥克風再試一次！');
+        return;
+      }
+
+      let correctCount = 0;
+      let wrongChars = [];
+      let spokenPtr = 0;
+      const diffContainer = document.getElementById('diff-result-display');
+      diffContainer.innerHTML = '';
+
+      targetChars.forEach((char) => {
+        // 向前搜尋最多 3 個字以容忍多讀雜音
+        let foundIndex = -1;
+        for (let offset = 0; offset < 3 && (spokenPtr + offset) < spokenChars.length; offset++) {
+          if (spokenChars[spokenPtr + offset] === char) {
+            foundIndex = spokenPtr + offset;
+            break;
+          }
+        }
+
+        const span = document.createElement('span');
+        if (foundIndex !== -1) {
+          correctCount++;
+          spokenPtr = foundIndex + 1;
+          span.textContent = char;
+          span.className = 'text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-lg';
+        } else {
+          wrongChars.push(char);
+          span.textContent = char;
+          span.title = '點擊聆聽這個字的發音';
+          span.className = 'text-rose-600 bg-rose-100 border-b-2 border-rose-500 px-1.5 py-0.5 rounded-lg cursor-pointer hover:bg-rose-200';
+          span.onclick = () => speakText(char);
+        }
+        diffContainer.appendChild(span);
+      });
+
+      const accuracy = Math.round((correctCount / targetChars.length) * 100);
+      let starsEarned = 1;
+      let msg = '繼續加油！點擊紅色的字聽聽發音，再試一次吧！';
+
+      if (accuracy === 100) {
+        starsEarned = 3;
+        msg = '🌟 太厲害了！一字不漏全部讀對，獲得 3 顆星星！';
+        confetti({ particleCount: 70, spread: 60, origin: { y: 0.7 } });
+      } else if (accuracy >= 80) {
+        starsEarned = 2;
+        msg = '👏 很棒喔！已經非常標準了，再把紅字練熟就滿分啦！';
+      }
+
+      document.getElementById('accuracy-badge').textContent = `準確率 ${accuracy}%`;
+      document.getElementById('accuracy-badge').className = accuracy >= 80
+        ? 'text-lg font-black px-3 py-0.5 rounded-full bg-emerald-100 text-emerald-700'
+        : 'text-lg font-black px-3 py-0.5 rounded-full bg-amber-100 text-amber-700';
+
+      document.getElementById('earned-stars-display').textContent = '⭐'.repeat(starsEarned);
+      document.getElementById('encouragement-msg').textContent = msg;
+
+      const retryBtn = document.getElementById('btn-retry-record');
+      if (wrongChars.length > 0) {
+        retryBtn.classList.remove('hidden');
+      } else {
+        retryBtn.classList.add('hidden');
+      }
+
+      appState.lastEvalResult = {
+        accuracy,
+        wrongChars: wrongChars.length > 0 ? wrongChars.join('、') : '無',
+        starsEarned
+      };
+
+      document.getElementById('feedback-box').classList.remove('hidden');
+    }
+
+    // 8. 提交成績與遊戲化獎勵
+    function submitTaskResult() {
+      if (!appState.student || !appState.lastEvalResult) return;
+
+      const s = appState.student;
+      const evalRes = appState.lastEvalResult;
+
+      // 更新學生進度
+      s.stars += evalRes.starsEarned;
+      if (appState.currentTab === 'words') {
+        s.todayWordsDone = true;
+      } else {
+        s.todayPassageDone = true;
+      }
+      saveStudentProfile();
+      updateStudentUI();
+
+      // 整理記錄物件
+      const record = {
+        timestamp: new Date().toLocaleString('zh-HK', { hour12: false }),
+        className: s.className,
+        studentNo: s.studentNo,
+        studentName: s.studentName,
+        language: appState.lang === 'zh-HK' ? '粵語' : '普通話',
+        taskType: appState.currentTab === 'words' ? '詞語練習' : '短文朗讀',
+        accuracy: evalRes.accuracy,
+        wrongChars: evalRes.wrongChars,
+        starsEarned: evalRes.starsEarned,
+        stickerCount: s.stickers.length
+      };
+
+      // 本機備份
+      const allRecords = JSON.parse(localStorage.getItem('reading_all_records') || '[]');
+      allRecords.unshift(record);
+      localStorage.setItem('reading_all_records', JSON.stringify(allRecords));
+
+      // 傳送至 Google Sheets
+      const statusEl = document.getElementById('upload-status-msg');
+      if (appState.gasUrl) {
+        statusEl.textContent = '⏳ 成績上傳中...';
+        statusEl.className = 'text-center text-xs font-bold text-sky-600';
+
+        fetch(appState.gasUrl, {
+          method: 'POST',
+          mode: 'no-cors',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(record)
+        })
+          .then(() => {
+            statusEl.textContent = '✅ 已成功儲存至老師記錄表！';
+            statusEl.className = 'text-center text-xs font-bold text-emerald-600';
+            showToast('🎉 成績已成功傳送給老師！');
+          })
+          .catch(() => {
+            statusEl.textContent = '⚠️ 網絡不穩，成績已先安全保存在本機。';
+            statusEl.className = 'text-center text-xs font-bold text-amber-600';
+          });
+      } else {
+        statusEl.textContent = '✅ 成績已記錄！（老師尚未設定雲端連結，已暫存於本機）';
+        statusEl.className = 'text-center text-xs font-bold text-emerald-600';
+        showToast('🎉 成績已記錄！');
+      }
+    }
+
+    // 9. 貼紙寶箱與圖鑑彈窗
+    function openTreasureChest() {
+      const s = appState.student;
+      if (!s || s.chestOpenedToday) return;
+
+      const unlockedIds = new Set(s.stickers);
+      const lockedStickers = STICKER_CATALOG.filter(st => !unlockedIds.has(st.id));
+      const pool = lockedStickers.length > 0 ? lockedStickers : STICKER_CATALOG;
+      const picked = pool[Math.floor(Math.random() * pool.length)];
+
+      if (!unlockedIds.has(picked.id)) {
+        s.stickers.push(picked.id);
+      }
+      s.chestOpenedToday = true;
+      saveStudentProfile();
+      updateStudentUI();
+
+      document.getElementById('reward-sticker-emoji').textContent = picked.emoji;
+      document.getElementById('reward-sticker-name').textContent = picked.name;
+      document.getElementById('reward-sticker-desc').textContent = picked.desc;
+      document.getElementById('modal-chest-reward').classList.remove('hidden');
+
+      confetti({ particleCount: 100, spread: 80, origin: { y: 0.6 } });
+    }
+
+    function openStickerModal() {
+      const grid = document.getElementById('sticker-grid');
+      const unlocked = new Set(appState.student ? appState.student.stickers : []);
+      grid.innerHTML = '';
+
+      STICKER_CATALOG.forEach(st => {
+        const isUnlocked = unlocked.has(st.id);
+        const card = document.createElement('div');
+        card.className = isUnlocked
+          ? 'bg-gradient-to-b from-pink-50 to-amber-50 border-2 border-pink-300 rounded-2xl p-3 text-center shadow-sm'
+          : 'bg-slate-100 border-2 border-dashed border-slate-300 rounded-2xl p-3 text-center opacity-60';
+
+        card.innerHTML = `
+          <div class="text-5xl mb-2 ${isUnlocked ? '' : 'grayscale brightness-75'}">${isUnlocked ? st.emoji : '❓'}</div>
+          <div class="font-black text-sm ${isUnlocked ? 'text-slate-800' : 'text-slate-400'}">${isUnlocked ? st.name : '尚未解鎖'}</div>
+          <div class="text-[11px] text-slate-500 mt-0.5">${isUnlocked ? st.desc : '完成每日朗讀開寶箱'}</div>
+        `;
+        grid.appendChild(card);
+      });
+
+      document.getElementById('modal-stickers').classList.remove('hidden');
+    }
+
+    function closeModal(modalId) {
+      document.getElementById(modalId).classList.add('hidden');
+    }
+
+    // 10. 教師後台驗證與管理功能
+    function toggleTeacherAuthModal() {
+      document.getElementById('teacher-pwd-input').value = '';
+      document.getElementById('modal-teacher-auth').classList.remove('hidden');
+    }
+
+    function verifyTeacherPwd() {
+      const pwd = document.getElementById('teacher-pwd-input').value;
+      if (pwd === '1234') {
+        closeModal('modal-teacher-auth');
+        document.getElementById('view-login').classList.add('hidden');
+        document.getElementById('view-student').classList.add('hidden');
+        document.getElementById('view-teacher').classList.remove('hidden');
+        renderRecordsTable();
+      } else {
+        showToast('❌ 密碼錯誤！預設密碼為 1234');
+      }
+    }
+
+    function exitTeacherView() {
+      document.getElementById('view-teacher').classList.add('hidden');
+      if (appState.student) {
+        document.getElementById('view-student').classList.remove('hidden');
+        renderTaskMaterial();
+      } else {
+        document.getElementById('view-login').classList.remove('hidden');
+      }
+    }
+
+    function saveDailyContent() {
+      const defaultLang = document.getElementById('teacher-default-lang').value;
+      const wordsRaw = document.getElementById('teacher-words-input').value;
+      const passageRaw = document.getElementById('teacher-passage-input').value.trim();
+
+      const wordsArray = wordsRaw.split(/[,，、\s]+/).map(w => w.trim()).filter(Boolean);
+      if (wordsArray.length === 0 || !passageRaw) {
+        showToast('⚠️ 請填寫完整的詞語及短文內容！');
+        return;
+      }
+
+      appState.dailyContent = { words: wordsArray, passage: passageRaw };
+      localStorage.setItem('reading_daily_content', JSON.stringify(appState.dailyContent));
+      localStorage.setItem('reading_default_lang', defaultLang);
+      setLanguage(defaultLang);
+
+      showToast('✅ 今日朗讀教材與預設語言已成功更新！');
+    }
+
+    function saveGasUrl() {
+      const url = document.getElementById('teacher-gas-url').value.trim();
+      appState.gasUrl = url;
+      localStorage.setItem('reading_gas_url', url);
+      showToast('✅ Google Apps Script 網址已儲存！');
+    }
+
+    function testGasConnection() {
+      const url = document.getElementById('teacher-gas-url').value.trim();
+      const statusEl = document.getElementById('gas-test-status');
+      if (!url) {
+        statusEl.textContent = '⚠️ 請先輸入 Web App URL！';
+        statusEl.className = 'text-xs font-bold text-rose-600';
+        return;
+      }
+      statusEl.textContent = '⏳ 正在測試連線並讀取 Google Sheets 資料...';
+      statusEl.className = 'text-xs font-bold text-sky-600';
+
+      fetch(url)
+        .then(res => res.json())
+        .then(data => {
+          statusEl.textContent = `✅ 連線成功！目前試算表內共有 ${data.length} 筆學生記錄。`;
+          statusEl.className = 'text-xs font-bold text-emerald-600';
+          if (Array.isArray(data) && data.length > 0) {
+            localStorage.setItem('reading_all_records', JSON.stringify(data));
+            renderRecordsTable();
+          }
+        })
+        .catch(() => {
+          statusEl.textContent = '❌ 連線失敗，請確認 Apps Script 部署權限已設為「所有人」。';
+          statusEl.className = 'text-xs font-bold text-rose-600';
+        });
+    }
+
+    function fetchRecordsFromSheets() {
+      if (!appState.gasUrl) {
+        showToast('⚠️ 尚未設定 Google Apps Script 網址，目前顯示本機記錄。');
+        renderRecordsTable();
+        return;
+      }
+      testGasConnection();
+    }
+
+    function renderRecordsTable() {
+      const tbody = document.getElementById('records-table-body');
+      const records = JSON.parse(localStorage.getItem('reading_all_records') || '[]');
+      tbody.innerHTML = '';
+
+      if (records.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="9" class="p-6 text-center text-slate-400 font-bold">目前尚無學生完成記錄</td></tr>`;
+        return;
+      }
+
+      records.forEach(r => {
+        const tr = document.createElement('tr');
+        tr.className = 'hover:bg-slate-50';
+        tr.innerHTML = `
+          <td class="p-3 text-slate-500 text-xs">${r.timestamp || '-'}</td>
+          <td class="p-3 font-bold">${r.className || '-'}</td>
+          <td class="p-3">${r.studentNo || '-'}</td>
+          <td class="p-3 font-bold text-slate-800">${r.studentName || '-'}</td>
+          <td class="p-3"><span class="px-2 py-0.5 rounded bg-amber-100 text-amber-800 text-xs font-bold">${r.language || '-'}</span></td>
+          <td class="p-3">${r.taskType || '-'}</td>
+          <td class="p-3 font-black ${Number(r.accuracy) >= 80 ? 'text-emerald-600' : 'text-rose-600'}">${r.accuracy}%</td>
+          <td class="p-3 text-rose-500 font-bold">${r.wrongChars || '無'}</td>
+          <td class="p-3 font-bold text-amber-600">⭐ ${r.starsEarned || 0} / 📒 ${r.stickerCount || 0}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function exportRecordsCSV() {
+      const records = JSON.parse(localStorage.getItem('reading_all_records') || '[]');
+      if (records.length === 0) {
+        showToast('⚠️ 目前沒有記錄可供匯出！');
+        return;
+      }
+      const headers = ['完成時間', '班別', '學號', '姓名', '練習語言', '任務類型', '準確率(%)', '錯字列表', '獲得星星', '已解鎖貼紙數'];
+      const csvRows = [headers.join(',')];
+
+      records.forEach(r => {
+        const row = [
+          `"${r.timestamp}"`,
+          `"${r.className}"`,
+          `"${r.studentNo}"`,
+          `"${r.studentName}"`,
+          `"${r.language}"`,
+          `"${r.taskType}"`,
+          r.accuracy,
+          `"${r.wrongChars}"`,
+          r.starsEarned,
+          r.stickerCount
+        ];
+        csvRows.push(row.join(','));
+      });
+
+      const blob = new Blob(['\uFEFF' + csvRows.join('\n')], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `語文朗讀成績報表_${new Date().toISOString().split('T')[0]}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    function openGasCodeModal() {
+      document.getElementById('modal-gas-code').classList.remove('hidden');
+    }
+
+    function copyGasCode() {
+      const code = document.getElementById('gas-code-block').innerText;
+      const textarea = document.createElement('textarea');
+      textarea.value = code;
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textarea);
+      showToast('✅ Google Apps Script 程式碼已複製到剪貼簿！');
+    }
+
+    // 頁面內浮動訊息提示框（取代 alert）
+    function showToast(message) {
+      let toast = document.getElementById('app-toast');
+      if (!toast) {
+        toast = document.createElement('div');
+        toast.id = 'app-toast';
+        toast.className = 'fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-slate-800 text-white font-bold px-6 py-3 rounded-2xl shadow-xl text-sm transition-all duration-300 opacity-0 pointer-events-none';
+        document.body.appendChild(toast);
+      }
+      toast.textContent = message;
+      toast.classList.remove('opacity-0');
+      clearTimeout(toast._timer);
+      toast._timer = setTimeout(() => {
+        toast.classList.add('opacity-0');
+      }, 3000);
+    }
+  </script>
+</body>
+</html>
